@@ -1,5 +1,8 @@
 [package]
 name = "pluralizer"
+description = "Rust package to pluralize or singularize any word based on a count inspired on pluralize NPM package"
+repository = "https://github.com/KennethGomez/pluralizer"
+license-file = "LICENSE"
 version = "0.1.0"
 edition = "2021"
 
