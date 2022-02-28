@@ -1,5 +1,8 @@
 pub(crate) mod constants;
 
+#[cfg(test)]
+mod test;
+
 use std::collections::HashMap;
 
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -72,13 +75,10 @@ pub fn add_plural_rule(rule: String, placement: String) {
 }
 
 fn _add_singular_rule(rule: String, placement: String) {
-    SINGULAR_RULES
-        .lock()
-        .unwrap()
-        .push(WordRule {
-            rule: Regex::new(rule.as_str()).expect("Invalid regular expression"),
-            placement
-        });
+    SINGULAR_RULES.lock().unwrap().push(WordRule {
+        rule: Regex::new(rule.as_str()).expect("Invalid regular expression"),
+        placement,
+    });
 }
 
 pub fn add_singular_rule(rule: String, placement: String) {
@@ -116,30 +116,26 @@ fn restore_case(word: &str, token: String) -> String {
 
     // Upper cased words. E.g. "WHISKY".
     if word.eq(&word.to_uppercase()) {
-        return word.to_uppercase();
+        return token.to_uppercase();
     }
 
     // Title cased words. E.g. "Title".
-    let first_char = word
-        .chars()
-        .nth(0)
-        .expect("Trying to restore case of empty word")
-        .to_string();
+    let first_char = word.chars().nth(0);
 
-    if first_char.eq(&first_char.to_uppercase()) {
-        let token_first_char = token
-            .chars()
-            .nth(0)
-            .expect("Trying to restore case of empty token")
-            .to_uppercase();
+    if let Some(fc) = first_char {
+        if fc.is_uppercase() {
+            let token_first_char = token.chars().nth(0);
 
-        let last = if token.len() > 1 {
-            &token[1..token.len() - 1]
-        } else {
-            ""
-        };
+            if let Some(tfc) = token_first_char {
+                let last = if token.len() > 1 {
+                    &token[1..token.len()]
+                } else {
+                    ""
+                };
 
-        return format!("{}{}", token_first_char, last);
+                return format!("{}{}", tfc, last);
+            }
+        }
     }
 
     // Lower cased words. E.g. "test".
@@ -155,21 +151,40 @@ fn sanitize_word(token: String, word: &str, rules: Vec<WordRule>) -> String {
     // Iterate over the sanitization rules and use the first one to match.
     for word_rule in rules.iter().rev() {
         if word_rule.rule.is_match(word) {
-            return word_rule.rule.replace(word, |caps: &regex::Captures| {
-                    let mut str = word_rule.clone().placement;
+            let str = word_rule.rule.replace(word, |caps: &regex::Captures| {
+                let mut str = restore_case(word, word_rule.placement.clone());
 
-                    for (i, m) in caps
-                        .iter()
-                        .filter(|m| m.is_some())
-                        .map(|m| m.unwrap())
-                        .enumerate()
-                    {
-                        str = str.replace(format!("${}", i).as_str(), m.as_str());
+                for (i, m) in caps
+                    .iter()
+                    .filter(|m| m.is_some())
+                    .map(|m| m.unwrap())
+                    .enumerate()
+                {
+                    str = str.replace(
+                        format!("${}", i).as_str(),
+                        restore_case(word, m.as_str().to_string()).as_str(),
+                    );
+                }
+
+                str
+            });
+
+            let mut skip = false;
+
+            return str
+                .chars()
+                .filter(|c| {
+                    if skip {
+                        skip = false;
+
+                        return skip;
                     }
 
-                    str
+                    skip = c == &'$';
+
+                    !skip
                 })
-                .to_string();
+                .collect();
         }
     }
 
@@ -246,8 +261,5 @@ pub fn pluralize(word: &str, count: isize, inclusive: bool) -> String {
 }
 
 fn main() {
-    println!("{}", pluralize("house", 2, true));
-    println!("{}", pluralize("man", 1, true));
-    println!("{}", pluralize("messes", 1, true));
-    println!("{}", pluralize("chinese", 2, true));
+    println!("{}", pluralize("CHICKEN", 2, true));
 }
