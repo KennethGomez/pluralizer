@@ -1,3 +1,39 @@
+// Copyright 2022 pluralizer Developers
+//
+// Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
+// http://apache.org/licenses/LICENSE-2.0> or the MIT license <LICENSE-MIT or
+// http://opensource.org/licenses/MIT>, at your option. This file may not be
+// copied, modified, or distributed except according to those terms.
+
+/*!
+Rust package to pluralize or singularize any word based on a count inspired on pluralize NPM package.
+
+It will keep plurals are plurals if the count given is not 1, either way, it is going to keep the  singular form if the count given is 1
+
+# Example
+
+```rust
+use pluralizer::pluralize;
+
+fn main() {
+    pluralizer::initialize();
+
+    // It can convert to plural
+    println!("{}", pluralizer::pluralize("House", 2, true)); // 2 Houses
+
+    // But also can convert to singular
+    println!("{}", pluralizer::pluralize("Houses", 1, true)); // 1 House
+
+    // And keep singularization if needed
+    println!("{}", pluralizer::pluralize("House", 1, false)); // House
+
+    // Or keep pluralization
+    println!("{}", pluralizer::pluralize("Houses", 2, false)); // Houses
+}
+```
+
+*/
+
 pub(crate) mod constants;
 
 #[cfg(test)]
