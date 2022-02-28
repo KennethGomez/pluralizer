@@ -1,4 +1,4 @@
-use crate::pluralize;
+use crate::{initialize, pluralize};
 
 const BASIC_TESTS: &'static [[&str; 2]] = &[
     // Uncountables.
@@ -685,15 +685,29 @@ const PLURAL_TESTS: &'static [[&str; 2]] = &[
 ];
 
 #[test]
+#[ctor::ctor]
+fn initialize_crate() {
+    initialize();
+}
+
+#[test]
 fn can_convert_to_plural() {
     let mut tests = BASIC_TESTS.to_vec();
 
     tests.extend_from_slice(PLURAL_TESTS);
 
     for test in tests {
-        if pluralize(test[0], 5, false) != test[1] {
-            println!("{} {}", test[0], test[1]);
-        }
         assert_eq!(pluralize(test[0], 5, false), test[1])
+    }
+}
+
+#[test]
+fn can_convert_to_singular() {
+    let mut tests = BASIC_TESTS.to_vec();
+
+    tests.extend_from_slice(SINGULAR_TESTS);
+
+    for test in tests {
+        assert_eq!(pluralize(test[1], 1, false), test[0])
     }
 }

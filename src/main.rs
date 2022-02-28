@@ -27,7 +27,7 @@ lazy_static! {
 }
 
 pub fn initialize() {
-    let initialized = INITIALIZED.load(Ordering::SeqCst);
+    let initialized = INITIALIZED.load(Ordering::Relaxed);
 
     if !initialized {
         for [singular, plural] in constants::IRREGULAR_RULES.iter() {
@@ -43,7 +43,7 @@ pub fn initialize() {
             _add_uncountable_rule(rule.to_string())
         }
 
-        INITIALIZED.store(true, Ordering::SeqCst)
+        INITIALIZED.store(true, Ordering::Relaxed)
     }
 }
 
@@ -143,8 +143,10 @@ fn restore_case(word: &str, token: String) -> String {
 }
 
 fn sanitize_word(token: String, word: &str, rules: Vec<WordRule>) -> String {
+    let uncountable = get_mutex(&UNCOUNTABLE_RULES);
+
     // Empty string or doesn't need fixing.
-    if token.len() == 0 || UNCOUNTABLE_RULES.lock().unwrap().contains(&token) {
+    if token.len() == 0 || uncountable.contains(&token) {
         return word.to_string();
     }
 
@@ -224,18 +226,25 @@ fn replace_word(
 
 fn to_singular(word: &str) -> String {
     replace_word(
-        IRREGULAR_PLURALS.lock().unwrap().clone(),
-        IRREGULAR_SINGLES.lock().unwrap().clone(),
-        SINGULAR_RULES.lock().unwrap().clone(),
+        get_mutex(&IRREGULAR_PLURALS),
+        get_mutex(&IRREGULAR_SINGLES),
+        get_mutex(&SINGULAR_RULES),
         word,
     )
 }
 
+fn get_mutex<T: Sized + Clone>(var: &Mutex<T>) -> T {
+    match var.lock() {
+        Ok(guard) => guard,
+        Err(poisoned) => poisoned.into_inner(),
+    }.clone()
+}
+
 fn to_plural(word: &str) -> String {
     replace_word(
-        IRREGULAR_SINGLES.lock().unwrap().clone(),
-        IRREGULAR_PLURALS.lock().unwrap().clone(),
-        PLURAL_RULES.lock().unwrap().clone(),
+        get_mutex(&IRREGULAR_SINGLES),
+        get_mutex(&IRREGULAR_PLURALS),
+        get_mutex(&PLURAL_RULES),
         word,
     )
 }
