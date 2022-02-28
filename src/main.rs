@@ -10,7 +10,7 @@ use regex::Regex;
 
 #[derive(Debug, Clone)]
 struct WordRule {
-    rule: String,
+    rule: Regex,
     placement: String,
 }
 
@@ -23,7 +23,7 @@ lazy_static! {
     static ref INITIALIZED: AtomicBool = AtomicBool::new(false);
 }
 
-fn initialize() {
+pub fn initialize() {
     let initialized = INITIALIZED.load(Ordering::SeqCst);
 
     if !initialized {
@@ -59,10 +59,10 @@ pub fn add_irregular_rule(singular: String, plural: String) {
 }
 
 fn _add_plural_rule(rule: String, placement: String) {
-    PLURAL_RULES
-        .lock()
-        .unwrap()
-        .push(WordRule { rule, placement });
+    PLURAL_RULES.lock().unwrap().push(WordRule {
+        rule: Regex::new(rule.as_str()).expect("Invalid regular expression"),
+        placement,
+    });
 }
 
 pub fn add_plural_rule(rule: String, placement: String) {
@@ -75,7 +75,10 @@ fn _add_singular_rule(rule: String, placement: String) {
     SINGULAR_RULES
         .lock()
         .unwrap()
-        .push(WordRule { rule, placement });
+        .push(WordRule {
+            rule: Regex::new(rule.as_str()).expect("Invalid regular expression"),
+            placement
+        });
 }
 
 pub fn add_singular_rule(rule: String, placement: String) {
@@ -151,18 +154,22 @@ fn sanitize_word(token: String, word: &str, rules: Vec<WordRule>) -> String {
 
     // Iterate over the sanitization rules and use the first one to match.
     for word_rule in rules.iter().rev() {
-        let reg = Regex::new(word_rule.rule.as_str()).expect("Invalid regular expression");
+        if word_rule.rule.is_match(word) {
+            return word_rule.rule.replace(word, |caps: &regex::Captures| {
+                    let mut str = word_rule.clone().placement;
 
-        if reg.is_match(word) {
-            return reg.replace(word, |caps: &regex::Captures| {
-                let mut str = word_rule.clone().placement;
+                    for (i, m) in caps
+                        .iter()
+                        .filter(|m| m.is_some())
+                        .map(|m| m.unwrap())
+                        .enumerate()
+                    {
+                        str = str.replace(format!("${}", i).as_str(), m.as_str());
+                    }
 
-                for (i, m) in caps.iter().filter(|m| m.is_some()).map(|m| m.unwrap()).enumerate() {
-                    str = str.replace(format!("${}", i).as_str(), m.as_str());
-                }
-
-                str
-            }).to_string();
+                    str
+                })
+                .to_string();
         }
     }
 
