@@ -696,8 +696,14 @@ fn can_convert_to_plural() {
 
     tests.extend_from_slice(PLURAL_TESTS);
 
-    for test in tests {
-        assert_eq!(pluralize(test[0], 5, false), test[1])
+    for [singular, plural] in tests {
+        // Make sure the word stays pluralized.
+        assert_eq!(pluralize(plural, 5, false), plural);
+
+        // Make sure the word becomes a plural.
+        if singular != plural {
+            assert_eq!(pluralize(singular, 5, false), plural);
+        }
     }
 }
 
@@ -707,7 +713,13 @@ fn can_convert_to_singular() {
 
     tests.extend_from_slice(SINGULAR_TESTS);
 
-    for test in tests {
-        assert_eq!(pluralize(test[1], 1, false), test[0])
+    for [singular, plural] in tests {
+        // Make sure the word stays singular.
+        assert_eq!(pluralize(singular, 1, false), singular);
+
+        // Make sure the word becomes singular.
+        if singular != plural {
+            assert_eq!(pluralize(plural, 1, false), singular);
+        }
     }
 }
