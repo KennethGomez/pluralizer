@@ -32,7 +32,7 @@ fn main() {
 }
 ```
 
-*/
+ */
 
 pub(crate) mod constants;
 
@@ -45,7 +45,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
 use lazy_static::lazy_static;
-use regex::Regex;
+use regex::{Regex};
 
 #[derive(Debug, Clone)]
 struct WordRule {
@@ -53,11 +53,23 @@ struct WordRule {
     placement: String,
 }
 
+macro_rules! load_regex_vec {
+    ($rules: expr) => {
+        $rules
+            .iter()
+            .map(|(k, v)| WordRule {
+                rule: Regex::new(k).expect("Invalid regular expression"),
+                placement: v.to_string()
+            })
+            .collect()
+    }
+}
+
 lazy_static! {
     static ref IRREGULAR_SINGLES: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
     static ref IRREGULAR_PLURALS: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
-    static ref PLURAL_RULES: Mutex<Vec<WordRule>> = Mutex::new(Vec::new());
-    static ref SINGULAR_RULES: Mutex<Vec<WordRule>> = Mutex::new(Vec::new());
+    static ref PLURAL_RULES: Mutex<Vec<WordRule>> = Mutex::new(load_regex_vec!(constants::PLURAL_RULES));
+    static ref SINGULAR_RULES: Mutex<Vec<WordRule>> = Mutex::new(load_regex_vec!(constants::SINGULAR_RULES));
     static ref UNCOUNTABLE_RULES: Mutex<Vec<String>> = Mutex::new(Vec::new());
     static ref INITIALIZED: AtomicBool = AtomicBool::new(false);
 }
@@ -70,15 +82,10 @@ lazy_static! {
 pub fn initialize() {
     let initialized = INITIALIZED.load(Ordering::Relaxed);
 
+
     if !initialized {
-        for [singular, plural] in constants::IRREGULAR_RULES.iter() {
+        for (singular, plural) in constants::IRREGULAR_RULES.iter() {
             _add_irregular_rule(singular.to_string(), plural.to_string())
-        }
-        for [rule, placement] in constants::PLURAL_RULES.iter() {
-            _add_plural_rule(rule.to_string(), placement.to_string())
-        }
-        for [rule, placement] in constants::SINGULAR_RULES.iter() {
-            _add_singular_rule(rule.to_string(), placement.to_string())
         }
         for rule in constants::UNCOUNTABLE_RULES.iter() {
             _add_uncountable_rule(rule.to_string())
@@ -320,7 +327,7 @@ fn get_mutex<T: Sized + Clone>(var: &Mutex<T>) -> T {
         Ok(guard) => guard,
         Err(poisoned) => poisoned.into_inner(),
     }
-    .clone()
+        .clone()
 }
 
 fn to_plural(word: &str) -> String {
