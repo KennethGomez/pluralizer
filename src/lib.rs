@@ -343,7 +343,7 @@ fn to_plural(word: &str) -> String {
 /// pluralizer::pluralize("House", 1, false); // House
 /// pluralizer::pluralize("Houses", 2, false); // Houses
 /// ```
-pub fn pluralize(word: &str, count: isize, inclusive: bool) -> String {
+pub fn pluralize(word: &str, count: isize, include_count: bool) -> String {
     initialize();
 
     let pluralized: String = if count == 1 {
@@ -352,13 +352,9 @@ pub fn pluralize(word: &str, count: isize, inclusive: bool) -> String {
         to_plural(word)
     };
 
-    let mut out: String = String::new();
-
-    if inclusive {
-        out.push_str(format!("{} ", count).as_str())
+    if include_count {
+        format!("{} {}", count, pluralized)
+    } else {
+        pluralized
     }
-
-    out.push_str(pluralized.as_str());
-
-    out
 }
