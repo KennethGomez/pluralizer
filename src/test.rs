@@ -1,5 +1,3 @@
-use crate::{initialize, pluralize};
-
 const BASIC_TESTS: &'static [[&str; 2]] = &[
     // Uncountables.
     ["firmware", "firmware"],
@@ -684,42 +682,48 @@ const PLURAL_TESTS: &'static [[&str; 2]] = &[
     ["passerby", "passersby"],
 ];
 
-#[test]
-#[ctor::ctor]
-fn initialize_crate() {
-    initialize();
-}
+#[cfg(test)]
+mod test {
+    use crate::*;
+    use super::*;
 
-#[test]
-fn can_convert_to_plural() {
-    let mut tests = BASIC_TESTS.to_vec();
+    #[test]
+    #[ctor::ctor]
+    fn initialize_crate() {
+        initialize();
+    }
 
-    tests.extend_from_slice(PLURAL_TESTS);
+    #[test]
+    fn can_convert_to_plural() {
+        let mut tests = BASIC_TESTS.to_vec();
 
-    for [singular, plural] in tests {
-        // Make sure the word stays pluralized.
-        assert_eq!(pluralize(plural, 5, false), plural);
+        tests.extend_from_slice(PLURAL_TESTS);
 
-        // Make sure the word becomes a plural.
-        if singular != plural {
-            assert_eq!(pluralize(singular, 5, false), plural);
+        for [singular, plural] in tests {
+            // Make sure the word stays pluralized.
+            assert_eq!(pluralize(plural, 5, false), plural);
+
+            // Make sure the word becomes a plural.
+            if singular != plural {
+                assert_eq!(pluralize(singular, 5, false), plural);
+            }
         }
     }
-}
 
-#[test]
-fn can_convert_to_singular() {
-    let mut tests = BASIC_TESTS.to_vec();
+    #[test]
+    fn can_convert_to_singular() {
+        let mut tests = BASIC_TESTS.to_vec();
 
-    tests.extend_from_slice(SINGULAR_TESTS);
+        tests.extend_from_slice(SINGULAR_TESTS);
 
-    for [singular, plural] in tests {
-        // Make sure the word stays singular.
-        assert_eq!(pluralize(singular, 1, false), singular);
+        for [singular, plural] in tests {
+            // Make sure the word stays singular.
+            assert_eq!(pluralize(singular, 1, false), singular);
 
-        // Make sure the word becomes singular.
-        if singular != plural {
-            assert_eq!(pluralize(plural, 1, false), singular);
+            // Make sure the word becomes singular.
+            if singular != plural {
+                assert_eq!(pluralize(plural, 1, false), singular);
+            }
         }
     }
 }
