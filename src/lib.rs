@@ -190,10 +190,10 @@ pub fn add_uncountable_rule(rule: String) {
     _add_uncountable_rule(rule);
 }
 
-fn restore_case(word: &str, token: String) -> String {
+fn restore_case(word: &str, token: &str) -> String {
     // Tokens are an exact match.
-    if word.eq(&token) {
-        return token;
+    if word.eq(token) {
+        return token.to_string();
     }
 
     // Lower cased words. E.g. "hello".
@@ -241,7 +241,7 @@ fn sanitize_word(token: String, word: &str, rules: Vec<WordRule>) -> String {
     for word_rule in rules.iter().rev() {
         if word_rule.rule.is_match(word) {
             let str = word_rule.rule.replace(word, |caps: &regex::Captures| {
-                let mut str = restore_case(word, word_rule.placement.clone());
+                let mut str = restore_case(word, &word_rule.placement);
 
                 for (i, m) in caps
                     .iter()
@@ -251,7 +251,7 @@ fn sanitize_word(token: String, word: &str, rules: Vec<WordRule>) -> String {
                 {
                     str = str.replace(
                         format!("${}", i).as_str(),
-                        restore_case(word, m.as_str().to_string()).as_str(),
+                        restore_case(word, m.as_str()).as_str(),
                     );
                 }
 
@@ -291,19 +291,14 @@ fn replace_word(
 
     // Check against the keep object map.
     if keep_map.contains_key(&token) {
-        return restore_case(word, token);
+        return restore_case(word, &token);
     }
 
     // Check against the replacement map for a direct word replacement.
-    if replace_map.contains_key(&token) {
+    if let Some(token) = replace_map.get(&*token) {
         return restore_case(
             word,
-            replace_map
-                .get(&*token)
-                .expect(
-                    format!("Word `{}` doesnt't have a replace value ({})", word, token).as_str(),
-                )
-                .to_string(),
+            token,
         );
     }
 
