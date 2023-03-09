@@ -68,18 +68,30 @@ pub(crate) const PLURAL_RULES: &'static [(&str, &str)] = &[
     (r"(?i)(alias|[^aou]us|t[lm]as|gas|ris)$", "$1es"),
     (r"(?i)(e[mn]u)s?$", "$1s"),
     (r"(?i)([^l]ias|[aeiou]las|[ejzr]as|[iu]am)$", "$1"),
-    (r"(?i)(alumn|syllab|vir|radi|nucle|fung|cact|stimul|termin|bacill|foc|uter|loc|strat)(?:us|i)$", "$1i"),
+    (
+        r"(?i)(alumn|syllab|vir|radi|nucle|fung|cact|stimul|termin|bacill|foc|uter|loc|strat)(?:us|i)$",
+        "$1i",
+    ),
     (r"(?i)(alumn|alg|vertebr)(?:a|ae)$", "$1ae"),
     (r"(?i)(seraph|cherub)(?:im)?$", "$1im"),
     (r"(?i)(her|at|gr)o$", "$1oes"),
-    (r"(?i)(agend|addend|millenni|dat|extrem|bacteri|desiderat|strat|candelabr|errat|ov|symposi|curricul|automat|quor)(?:a|um)$", "$1a"),
-    (r"(?i)(apheli|hyperbat|periheli|asyndet|noumen|phenomen|criteri|organ|prolegomen|hedr|automat)(?:a|on)$", "$1a"),
+    (
+        r"(?i)(agend|addend|millenni|dat|extrem|bacteri|desiderat|strat|candelabr|errat|ov|symposi|curricul|automat|quor)(?:a|um)$",
+        "$1a",
+    ),
+    (
+        r"(?i)(apheli|hyperbat|periheli|asyndet|noumen|phenomen|criteri|organ|prolegomen|hedr|automat)(?:a|on)$",
+        "$1a",
+    ),
     (r"(?i)sis$", "ses"),
     (r"(?i)(?:(kni|wi|li)fe|(ar|l|ea|eo|oa|hoo)f)$", "$1$2ves"),
     (r"(?i)([^aeiouy]|qu)y$", "$1ies"),
     (r"(?i)([^ch][ieo][ln])ey$", "$1ies"),
     (r"(?i)(x|ch|ss|sh|zz)$", "$1es"),
-    (r"(?i)(matr|cod|mur|sil|vert|ind|append)(?:ix|ex)$", "$1ices"),
+    (
+        r"(?i)(matr|cod|mur|sil|vert|ind|append)(?:ix|ex)$",
+        "$1ices",
+    ),
     (r"(?i)\b((?:tit)?m|l)(?:ice|ouse)$", "$1ice"),
     (r"(?i)(pe)(?:rson|ople)$", "$1ople"),
     (r"(?i)(child)(?:ren)?$", "$1ren"),
@@ -211,8 +223,10 @@ pub(crate) const UNCOUNTABLE_RULES: &'static [&str] = &[
     "wildebeest",
     "wildlife",
     "you",
+];
+
+pub(crate) const UNCOUNTABLE_REGEX_RULES: &'static [&str] = &[
     "(?i)pok[eé]mon$",
-    // Regexes.
     "(?i)[^aeiou]ese$", // "chinese", "japanese"
     "(?i)deer$",        // "deer", "reindeer"
     "(?i)fish$",        // "fish", "blowfish", "angelfish"

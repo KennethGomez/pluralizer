@@ -16,19 +16,17 @@ It will keep plurals are plurals if the count given is not 1, either way, it is 
 use pluralizer::pluralize;
 
 fn main() {
-    pluralizer::initialize();
-
     // It can convert to plural
-    println!("{}", pluralizer::pluralize("House", 2, true)); // 2 Houses
+    println!("{}", pluralize("House", 2, true)); // 2 Houses
 
     // But also can convert to singular
-    println!("{}", pluralizer::pluralize("Houses", 1, true)); // 1 House
+    println!("{}", pluralize("Houses", 1, true)); // 1 House
 
     // And keep singularization if needed
-    println!("{}", pluralizer::pluralize("House", 1, false)); // House
+    println!("{}", pluralize("House", 1, false)); // House
 
     // Or keep pluralization
-    println!("{}", pluralizer::pluralize("Houses", 2, false)); // Houses
+    println!("{}", pluralize("Houses", 2, false)); // Houses
 }
 ```
 
@@ -40,12 +38,10 @@ pub(crate) mod constants;
 mod test;
 
 use std::collections::HashMap;
-
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
 use lazy_static::lazy_static;
-use regex::{Regex};
+use regex::Regex;
 
 #[derive(Debug, Clone)]
 struct WordRule {
@@ -54,76 +50,77 @@ struct WordRule {
 }
 
 macro_rules! load_regex_vec {
-    ($rules: expr) => {
-        $rules
+    ($rules: expr, $uncountable: expr) => {{
+        let mut vec = $rules
             .iter()
             .map(|(k, v)| WordRule {
                 rule: Regex::new(k).expect("Invalid regular expression"),
-                placement: v.to_string()
+                placement: v.to_string(),
             })
-            .collect()
-    }
+            .collect::<Vec<WordRule>>();
+
+        vec.append(
+            &mut $uncountable
+                .iter()
+                .map(|s| WordRule {
+                    rule: Regex::new(s).expect("Invalid regular expression"),
+                    placement: "$0".to_string(),
+                })
+                .collect(),
+        );
+
+        vec
+    }};
+}
+
+macro_rules! load_irregular_map {
+    ($rules: expr, $map: expr) => {
+        $rules.iter().map($map).collect()
+    };
 }
 
 lazy_static! {
-    static ref IRREGULAR_SINGLES: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
-    static ref IRREGULAR_PLURALS: Mutex<HashMap<String, String>> = Mutex::new(HashMap::new());
-    static ref PLURAL_RULES: Mutex<Vec<WordRule>> = Mutex::new(load_regex_vec!(constants::PLURAL_RULES));
-    static ref SINGULAR_RULES: Mutex<Vec<WordRule>> = Mutex::new(load_regex_vec!(constants::SINGULAR_RULES));
-    static ref UNCOUNTABLE_RULES: Mutex<Vec<String>> = Mutex::new(Vec::new());
-    static ref INITIALIZED: AtomicBool = AtomicBool::new(false);
-}
-
-/// This function initializes all constants into static references
-///
-/// This also converts the constant string rules into RegEx which is a heavy process
-/// so if you want to make your pluralize calls faster just call this at the beginning
-/// of your program.
-pub fn initialize() {
-    let initialized = INITIALIZED.load(Ordering::Relaxed);
-
-
-    if !initialized {
-        for (singular, plural) in constants::IRREGULAR_RULES.iter() {
-            _add_irregular_rule(singular.to_string(), plural.to_string())
-        }
-        for rule in constants::UNCOUNTABLE_RULES.iter() {
-            _add_uncountable_rule(rule.to_string())
-        }
-
-        INITIALIZED.store(true, Ordering::Relaxed)
-    }
-}
-
-fn _add_irregular_rule(singular: String, plural: String) {
-    IRREGULAR_SINGLES
-        .lock()
-        .unwrap()
-        .insert(singular.clone(), plural.clone());
-    IRREGULAR_PLURALS.lock().unwrap().insert(plural, singular);
+    static ref IRREGULAR_SINGLES: Mutex<HashMap<String, String>> = Mutex::new(load_irregular_map!(
+        constants::IRREGULAR_RULES,
+        |(k, v)| (k.to_string(), v.to_string())
+    ));
+    static ref IRREGULAR_PLURALS: Mutex<HashMap<String, String>> = Mutex::new(load_irregular_map!(
+        constants::IRREGULAR_RULES,
+        |(k, v)| (v.to_string(), k.to_string())
+    ));
+    static ref PLURAL_RULES: Mutex<Vec<WordRule>> = Mutex::new(load_regex_vec!(
+        constants::PLURAL_RULES,
+        constants::UNCOUNTABLE_REGEX_RULES
+    ));
+    static ref SINGULAR_RULES: Mutex<Vec<WordRule>> = Mutex::new(load_regex_vec!(
+        constants::SINGULAR_RULES,
+        constants::UNCOUNTABLE_REGEX_RULES
+    ));
+    static ref UNCOUNTABLE_RULES: Mutex<Vec<String>> = Mutex::new(
+        constants::UNCOUNTABLE_RULES
+            .iter()
+            .map(|s| s.to_string())
+            .collect()
+    );
 }
 
 /// Add an irregular word definition.
 ///
 /// # Examples
 /// ```
-/// pluralizer::initialize();
+/// pluralizer::add_irregular_rule("I".to_string(), "we".to_string());
 ///
-/// pluralizer::add_irregular_rule("I".to_string(), "me".to_string());
-///
-/// let result = pluralizer::pluralize("I", 2, false); // me
+/// let result = pluralizer::pluralize("I", 2, false); // we
 /// ```
 pub fn add_irregular_rule(singular: String, plural: String) {
-    initialize();
-
-    _add_irregular_rule(singular, plural);
-}
-
-fn _add_plural_rule(rule: String, placement: String) {
-    PLURAL_RULES.lock().unwrap().push(WordRule {
-        rule: Regex::new(rule.as_str()).expect("Invalid regular expression"),
-        placement,
-    });
+    IRREGULAR_SINGLES
+        .lock()
+        .unwrap()
+        .insert(singular.to_string(), plural.to_string());
+    IRREGULAR_PLURALS
+        .lock()
+        .unwrap()
+        .insert(plural.to_string(), singular.to_string());
 }
 
 /// Add a pluralization rule to the collection.
@@ -132,23 +129,17 @@ fn _add_plural_rule(rule: String, placement: String) {
 ///
 /// # Examples
 /// ```
-/// pluralizer::initialize();
+/// use regex::Regex;
 ///
-/// pluralizer::add_plural_rule("(?i)(matr|cod|mur|sil|vert|ind|append)(?:ix|ex)$".to_string(), "$1ices".to_string());
+/// pluralizer::add_plural_rule(Regex::new("(?i)(matr|cod|mur|sil|vert|ind|append)(?:ix|ex)$").unwrap(), "$1ices".to_string());
 ///
 /// let result = pluralizer::pluralize("Vertex", 2, false); // Vertices
 /// ```
-pub fn add_plural_rule(rule: String, placement: String) {
-    initialize();
-
-    _add_irregular_rule(rule, placement);
-}
-
-fn _add_singular_rule(rule: String, placement: String) {
-    SINGULAR_RULES.lock().unwrap().push(WordRule {
-        rule: Regex::new(rule.as_str()).expect("Invalid regular expression"),
-        placement,
-    });
+pub fn add_plural_rule(rule: Regex, placement: String) {
+    PLURAL_RULES
+        .lock()
+        .unwrap()
+        .push(WordRule { rule, placement });
 }
 
 /// Add a singularization rule to the collection.
@@ -157,44 +148,50 @@ fn _add_singular_rule(rule: String, placement: String) {
 ///
 /// # Examples
 /// ```
-/// pluralizer::initialize();
+/// use regex::Regex;
 ///
-/// pluralizer::add_singular_rule("(?i)(matr|append)ices$".to_string(), "$1ix".to_string());
+/// pluralizer::add_singular_rule(Regex::new("(?i)(matr|append)ices$").unwrap(), "$1ix".to_string());
 ///
 /// let result = pluralizer::pluralize("Matrices", 1, false); // Matrix
 /// ```
-pub fn add_singular_rule(rule: String, placement: String) {
-    initialize();
-
-    _add_irregular_rule(rule, placement);
+pub fn add_singular_rule(rule: Regex, placement: String) {
+    SINGULAR_RULES
+        .lock()
+        .unwrap()
+        .push(WordRule { rule, placement });
 }
 
-fn _add_uncountable_rule(rule: String) {
-    // Is regex
-    if rule.starts_with("(?i)") {
-        _add_plural_rule(rule.clone(), "$0".to_string());
-        _add_singular_rule(rule, "$0".to_string());
-    } else {
-        UNCOUNTABLE_RULES.lock().unwrap().push(rule.to_lowercase());
-    }
+/// Uncountable rule struct
+///
+/// It's given as a parameter of [add_uncountable_rule](add_uncountable_rule) method
+pub enum UncountableRule {
+    Regex(Regex),
+    String(String),
 }
 
 /// Add an uncountable word rule.
 ///
-/// The rule can be either a word or a RegEx
+/// The rule can be either a word or a RegEx using [the rule struct](UncountableRule)
 ///
 /// # Examples
 /// ```
-/// pluralizer::initialize();
+/// use pluralizer::UncountableRule;
 ///
-/// pluralizer::add_uncountable_rule("cash".to_string());
+/// pluralizer::add_uncountable_rule(UncountableRule::String("cash".to_string()));
 ///
 /// let result = pluralizer::pluralize("Cash", 2, false); // Cash
 /// ```
-pub fn add_uncountable_rule(rule: String) {
-    initialize();
-
-    _add_uncountable_rule(rule);
+pub fn add_uncountable_rule(rule: UncountableRule) {
+    match rule {
+        UncountableRule::Regex(rule) => {
+            // We add it as both plural and singular rules with same placement
+            add_plural_rule(rule.clone(), "$0".to_string());
+            add_singular_rule(rule, "$0".to_string());
+        }
+        UncountableRule::String(rule) => {
+            UNCOUNTABLE_RULES.lock().unwrap().push(rule.to_lowercase());
+        }
+    }
 }
 
 fn restore_case(word: &str, token: &str) -> String {
@@ -303,10 +300,7 @@ fn replace_word(
 
     // Check against the replacement map for a direct word replacement.
     if let Some(token) = replace_map.get(&*token) {
-        return restore_case(
-            word,
-            token,
-        );
+        return restore_case(word, token);
     }
 
     // Run all the rules against the word.
@@ -327,7 +321,7 @@ fn get_mutex<T: Sized + Clone>(var: &Mutex<T>) -> T {
         Ok(guard) => guard,
         Err(poisoned) => poisoned.into_inner(),
     }
-        .clone()
+    .clone()
 }
 
 fn to_plural(word: &str) -> String {
@@ -343,16 +337,12 @@ fn to_plural(word: &str) -> String {
 ///
 /// # Examples
 /// ```
-/// pluralizer::initialize();
-///
 /// pluralizer::pluralize("House", 2, true); // 2 Houses
 /// pluralizer::pluralize("Houses", 1, true); // 1 House
 /// pluralizer::pluralize("House", 1, false); // House
 /// pluralizer::pluralize("Houses", 2, false); // Houses
 /// ```
 pub fn pluralize(word: &str, count: isize, include_count: bool) -> String {
-    initialize();
-
     let pluralized: String = if count == 1 {
         to_singular(word)
     } else {

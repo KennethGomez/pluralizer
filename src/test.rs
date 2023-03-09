@@ -684,14 +684,8 @@ const PLURAL_TESTS: &'static [[&str; 2]] = &[
 
 #[cfg(test)]
 mod test {
-    use crate::*;
     use super::*;
-
-    #[test]
-    #[ctor::ctor]
-    fn initialize_crate() {
-        initialize();
-    }
+    use crate::*;
 
     #[test]
     fn can_convert_to_plural() {

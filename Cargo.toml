@@ -17,6 +17,3 @@ keywords = ["plurals", "singular", "pluralize"]
 [dependencies]
 lazy_static = "1.4.0"
 regex = "1.5.4"
-
-[dev-dependencies]
-ctor = "0.1.21"
