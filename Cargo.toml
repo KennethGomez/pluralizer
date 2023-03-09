@@ -1,6 +1,6 @@
 [package]
 name = "pluralizer"
-version = "0.3.2"
+version = "0.4.0"
 authors = ["Kenneth Gómez <kennethgomezfdz@gmail.com>"]
 license = "MIT/Apache-2.0"
 edition = "2021"
