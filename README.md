@@ -6,6 +6,7 @@ It will keep plurals are plurals if the count given is not 1, either way, it is 
 
 [![Rust](https://github.com/KennethGomez/pluralizer/actions/workflows/rust.yml/badge.svg)](https://github.com/KennethGomez/pluralizer/actions/workflows/rust.yml)
 [![Latest version](https://img.shields.io/crates/v/pluralizer.svg)](https://crates.io/crates/pluralizer)
+[![Downloads](https://img.shields.io/crates/d/pluralizer)](https://crates.io/crates/pluralizer)
 [![Documentation](https://docs.rs/pluralizer/badge.svg)](https://docs.rs/pluralizer)
 [![License](https://img.shields.io/crates/l/pluralizer.svg)](https://github.com/KennethGomez/pluralizer#license)
 
