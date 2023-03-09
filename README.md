@@ -20,7 +20,7 @@ Add the following dependency to your Cargo manifest...
 
 ```toml
 [dependencies]
-pluralizer = "0.3.1"
+pluralizer = "0.4.0"
 ```
 
 ...and see the [docs](https://docs.rs/pluralizer) for how to use it.
@@ -31,19 +31,17 @@ pluralizer = "0.3.1"
 use pluralizer::pluralize;
 
 fn main() {
-    pluralizer::initialize();
-
     // It can convert to plural
-    println!("{}", pluralizer::pluralize("House", 2, true)); // 2 Houses
+    println!("{}", pluralize("House", 2, true)); // 2 Houses
 
     // But also can convert to singular
-    println!("{}", pluralizer::pluralize("Houses", 1, true)); // 1 House
+    println!("{}", pluralize("Houses", 1, true)); // 1 House
 
     // And keep singularization if needed
-    println!("{}", pluralizer::pluralize("House", 1, false)); // House
+    println!("{}", pluralize("House", 1, false)); // House
 
     // Or keep pluralization
-    println!("{}", pluralizer::pluralize("Houses", 2, false)); // Houses
+    println!("{}", pluralize("Houses", 2, false)); // Houses
 }
 ```
 
