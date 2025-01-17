@@ -10,6 +10,17 @@ It will keep plurals are plurals if the count given is not 1, either way, it is 
 [![Documentation](https://docs.rs/pluralizer/badge.svg)](https://docs.rs/pluralizer)
 [![License](https://img.shields.io/crates/l/pluralizer.svg)](https://github.com/KennethGomez/pluralizer#license)
 
+## Performance
+
+This library has been benchmarked with [Criterion](https://crates.io/crates/criterion). Below are example results observed in a recent test environment:
+
+| Benchmark                 | Mean    | Notes                                        |
+|---------------------------|---------|----------------------------------------------|
+| **pluralize**             | ~7.6 ms | Performing repeated pluralization operations |
+| **add rules + pluralize** | ~7.8 ms | Adding and applying custom rules             |
+
+> Times can vary depending on factors like your CPU, Rust compiler version, and benchmark configuration.
+
 # Getting Started
 
 [pluralizer.rs is available on crates.io](https://crates.io/crates/pluralizer).
