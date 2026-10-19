@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.0 - Unreleased
+## 0.6.0 - 2026-10-19
 
 The public API is unchanged, but some outputs change: results now follow the case of the input
 word more closely. For lowercase and Title-case words they match the `pluralize` NPM package
