@@ -1,5 +1,8 @@
+// Rule tables ported from https://github.com/plurals/pluralize/blob/36f03cd/pluralize.js
+// (newer than the `pluralize@8.0.0` NPM release). Changing them changes outputs.
+
 /// Irregular rules
-pub(crate) const IRREGULAR_RULES: &'static [(&str, &str)] = &[
+pub(crate) const IRREGULAR_RULES: &[(&str, &str)] = &[
     // Pronouns.
     ("I", "we"),
     ("me", "us"),
@@ -60,7 +63,7 @@ pub(crate) const IRREGULAR_RULES: &'static [(&str, &str)] = &[
 ];
 
 /// Pluralization rules
-pub(crate) const PLURAL_RULES: &'static [(&str, &str)] = &[
+pub(crate) const PLURAL_RULES: &[(&str, &str)] = &[
     ("(?i)s?$", "s"),
     (r"(?i)[^\u0000-\u007F]$", "$0"),
     (r"(?i)([^aeiou]ese)$", "$1"),
@@ -101,7 +104,7 @@ pub(crate) const PLURAL_RULES: &'static [(&str, &str)] = &[
 ];
 
 /// Singularization rules
-pub(crate) const SINGULAR_RULES: &'static [(&str, &str)] = &[
+pub(crate) const SINGULAR_RULES: &[(&str, &str)] = &[
     ("(?i)s$", ""),
     ("(?i)(ss)$", "$1"),
     ("(?i)(wi|kni|(?:after|half|high|low|mid|non|night|[^\\w]|^)li)ves$", "$1fe"),
@@ -128,7 +131,7 @@ pub(crate) const SINGULAR_RULES: &'static [(&str, &str)] = &[
     ("(?i)men$", "man"),
 ];
 
-pub(crate) const UNCOUNTABLE_RULES: &'static [&str] = &[
+pub(crate) const UNCOUNTABLE_RULES: &[&str] = &[
     // Singular words with no plurals.
     "adulthood",
     "advice",
@@ -225,7 +228,7 @@ pub(crate) const UNCOUNTABLE_RULES: &'static [&str] = &[
     "you",
 ];
 
-pub(crate) const UNCOUNTABLE_REGEX_RULES: &'static [&str] = &[
+pub(crate) const UNCOUNTABLE_REGEX_RULES: &[&str] = &[
     "(?i)pok[eé]mon$",
     "(?i)[^aeiou]ese$", // "chinese", "japanese"
     "(?i)deer$",        // "deer", "reindeer"

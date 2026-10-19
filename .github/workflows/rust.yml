@@ -6,17 +6,55 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
-
+  test:
+    name: Test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+    runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --verbose
+    - uses: actions/checkout@v7
+    - uses: dtolnay/rust-toolchain@stable
+    - uses: Swatinem/rust-cache@v2
+    # Also builds the benches; doctests need a separate run
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --all-targets
+    - name: Run doctests
+      run: cargo test --doc
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy, rustfmt
+    - uses: Swatinem/rust-cache@v2
+    - name: Check formatting
+      run: cargo fmt --all --check
+    - name: Clippy
+      run: cargo clippy --all-targets -- -D warnings
+    - name: Docs
+      run: cargo doc --no-deps
+      env:
+        RUSTDOCFLAGS: -D warnings
+
+  msrv:
+    name: Minimum supported Rust version
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - uses: dtolnay/rust-toolchain@1.65
+    - uses: taiki-e/install-action@cargo-hack
+    # The dev-dependencies need a newer toolchain, so only the library is checked
+    - name: Check
+      run: cargo hack check --lib --no-dev-deps

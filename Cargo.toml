@@ -1,16 +1,19 @@
 [package]
 name = "pluralizer"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Kenneth Gómez <kennethgomezfdz@gmail.com>"]
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 edition = "2021"
+rust-version = "1.65"
 
-description = "Rust package to pluralize or singularize any word based on a count inspired on pluralize NPM package"
+description = "Rust package to pluralize or singularize any word based on a count, inspired by the pluralize NPM package"
 readme = "README.md"
 documentation = "https://docs.rs/pluralizer"
 
 repository = "https://github.com/KennethGomez/pluralizer"
 keywords = ["plurals", "singular", "pluralize"]
+categories = ["text-processing", "value-formatting"]
+exclude = [".github/", ".gitignore"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -19,7 +22,7 @@ regex = "1.11.1"
 once_cell = "1.20.2"
 
 [dev-dependencies]
-criterion = "0.5.1"
+criterion = "0.8.2"
 
 [[bench]]
 name = "perf_bench"

@@ -1,8 +1,8 @@
 # pluralizer
 
-Rust package to pluralize or singularize any word based on a count inspired on pluralize NPM package.
+Rust package to pluralize or singularize any word based on a count, inspired by the [pluralize](https://www.npmjs.com/package/pluralize) NPM package.
 
-It will keep plurals are plurals if the count given is not 1, either way, it is going to keep the  singular form if the count given is 1
+A count of exactly 1 produces the singular form and any other count produces the plural form. Words that are already in the requested form are kept as they are.
 
 [![Rust](https://github.com/KennethGomez/pluralizer/actions/workflows/rust.yml/badge.svg)](https://github.com/KennethGomez/pluralizer/actions/workflows/rust.yml)
 [![Latest version](https://img.shields.io/crates/v/pluralizer.svg)](https://crates.io/crates/pluralizer)
@@ -12,27 +12,29 @@ It will keep plurals are plurals if the count given is not 1, either way, it is 
 
 ## Performance
 
-This library has been benchmarked with [Criterion](https://crates.io/crates/criterion). Below are example results observed in a recent test environment:
+This library is benchmarked with [Criterion](https://crates.io/crates/criterion) (`cargo bench`). Example results:
 
-| Benchmark                 | Mean    | Notes                                        |
-|---------------------------|---------|----------------------------------------------|
-| **pluralize**             | ~7.6 ms | Performing repeated pluralization operations |
-| **add rules + pluralize** | ~7.8 ms | Adding and applying custom rules             |
+| Benchmark                    | Time     | Notes                                                                    |
+|------------------------------|----------|--------------------------------------------------------------------------|
+| `pluralize 10k calls`        | ~1.5 ms  | 10,000 calls pluralizing `"house"`, ~150 ns per call                     |
+| `corpus/plural`              | ~46 µs   | 213 mixed words (regular, irregular, uncountable, non-ASCII; lower, Title and UPPER case) |
+| `corpus/singular`            | ~49 µs   | The same words, singularized                                             |
+| `custom rules/pluralize/100` | ~300 ns  | One call with 100 custom plural, irregular and uncountable rules added   |
 
-> Times can vary depending on factors like your CPU, Rust compiler version, and benchmark configuration.
+Measured on an Apple M4 Pro with Rust 1.87.
+
+> Times vary with your CPU, Rust compiler version and benchmark configuration.
 
 # Getting Started
 
 [pluralizer.rs is available on crates.io](https://crates.io/crates/pluralizer).
 It is recommended to look there for the newest released version, as well as links to the newest builds of the docs.
 
-At the point of the last update of this README, the latest published version could be used like this:
-
 Add the following dependency to your Cargo manifest...
 
 ```toml
 [dependencies]
-pluralizer = "0.4.0"
+pluralizer = "0.6"
 ```
 
 ...and see the [docs](https://docs.rs/pluralizer) for how to use it.
@@ -42,19 +44,29 @@ pluralizer = "0.4.0"
 ```rust
 use pluralizer::pluralize;
 
-fn main() {
-    // It can convert to plural
-    println!("{}", pluralize("House", 2, true)); // 2 Houses
+// It can convert to plural
+assert_eq!(pluralize("House", 2, true), "2 Houses");
 
-    // But also can convert to singular
-    println!("{}", pluralize("Houses", 1, true)); // 1 House
+// But also can convert to singular
+assert_eq!(pluralize("Houses", 1, true), "1 House");
 
-    // And keep singularization if needed
-    println!("{}", pluralize("House", 1, false)); // House
+// And keep singularization if needed
+assert_eq!(pluralize("House", 1, false), "House");
 
-    // Or keep pluralization
-    println!("{}", pluralize("Houses", 2, false)); // Houses
-}
+// Or keep pluralization
+assert_eq!(pluralize("Houses", 2, false), "Houses");
+```
+
+Rules can also be added at runtime. They are global, so they apply to every later call on every thread:
+
+```rust
+use pluralizer::{add_irregular_rule, add_uncountable_rule, pluralize, UncountableRule};
+
+add_irregular_rule("octopus".to_string(), "octopodes".to_string());
+add_uncountable_rule(UncountableRule::String("paper".to_string()));
+
+assert_eq!(pluralize("octopus", 2, false), "octopodes");
+assert_eq!(pluralize("paper", 2, false), "paper");
 ```
 
 ## License

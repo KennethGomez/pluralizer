@@ -1,4 +1,4 @@
-const BASIC_TESTS: &'static [[&str; 2]] = &[
+const BASIC_TESTS: &[[&str; 2]] = &[
     // Uncountables.
     ["firmware", "firmware"],
     ["fish", "fish"],
@@ -662,7 +662,7 @@ const BASIC_TESTS: &'static [[&str; 2]] = &[
     ["oDonald", "oDonalds"],
 ];
 
-const SINGULAR_TESTS: &'static [[&str; 2]] = &[
+const SINGULAR_TESTS: &[[&str; 2]] = &[
     ["dingo", "dingos"],
     ["mango", "mangoes"],
     ["echo", "echos"],
@@ -672,7 +672,7 @@ const SINGULAR_TESTS: &'static [[&str; 2]] = &[
     ["seraph", "seraphs"],
 ];
 
-const PLURAL_TESTS: &'static [[&str; 2]] = &[
+const PLURAL_TESTS: &[[&str; 2]] = &[
     ["plateaux", "plateaux"],
     ["axis", "axes"],
     ["basis", "bases"],
@@ -682,42 +682,228 @@ const PLURAL_TESTS: &'static [[&str; 2]] = &[
     ["passerby", "passersby"],
 ];
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    use crate::*;
+// These tests share the global rule tables with each other, so they must not add rules.
+// Tests for custom rules live in `tests/`, where each file runs in its own process.
+use crate::{pluralize, BuiltinRules, BUILTIN_PLURAL_RULES, BUILTIN_SINGULAR_RULES};
 
-    #[test]
-    fn can_convert_to_plural() {
-        let mut tests = BASIC_TESTS.to_vec();
+fn check_plural(tests: &[[&str; 2]], form: impl Fn(&str) -> String) {
+    for [singular, plural] in tests {
+        let (singular, plural) = (form(singular), form(plural));
 
-        tests.extend_from_slice(PLURAL_TESTS);
+        // Make sure the word stays pluralized.
+        assert_eq!(
+            pluralize(&plural, 5, false),
+            plural,
+            "{plural:?} should stay plural"
+        );
 
-        for [singular, plural] in tests {
-            // Make sure the word stays pluralized.
-            assert_eq!(pluralize(plural, 5, false), plural);
-
-            // Make sure the word becomes a plural.
-            if singular != plural {
-                assert_eq!(pluralize(singular, 5, false), plural);
-            }
+        // Make sure the word becomes a plural.
+        if singular != plural {
+            assert_eq!(
+                pluralize(&singular, 5, false),
+                plural,
+                "{singular:?} should pluralize"
+            );
         }
     }
+}
 
-    #[test]
-    fn can_convert_to_singular() {
-        let mut tests = BASIC_TESTS.to_vec();
+fn check_singular(tests: &[[&str; 2]], form: impl Fn(&str) -> String) {
+    for [singular, plural] in tests {
+        let (singular, plural) = (form(singular), form(plural));
 
-        tests.extend_from_slice(SINGULAR_TESTS);
+        // Make sure the word stays singular.
+        assert_eq!(
+            pluralize(&singular, 1, false),
+            singular,
+            "{singular:?} should stay singular"
+        );
 
-        for [singular, plural] in tests {
-            // Make sure the word stays singular.
-            assert_eq!(pluralize(singular, 1, false), singular);
+        // Make sure the word becomes singular.
+        if singular != plural {
+            assert_eq!(
+                pluralize(&plural, 1, false),
+                singular,
+                "{plural:?} should singularize"
+            );
+        }
+    }
+}
 
-            // Make sure the word becomes singular.
-            if singular != plural {
-                assert_eq!(pluralize(plural, 1, false), singular);
-            }
+#[test]
+fn can_convert_to_plural() {
+    check_plural(BASIC_TESTS, str::to_string);
+    check_plural(PLURAL_TESTS, str::to_string);
+}
+
+#[test]
+fn can_convert_to_singular() {
+    check_singular(BASIC_TESTS, str::to_string);
+    check_singular(SINGULAR_TESTS, str::to_string);
+}
+
+#[test]
+fn keeps_upper_case() {
+    check_plural(BASIC_TESTS, str::to_uppercase);
+    check_singular(BASIC_TESTS, str::to_uppercase);
+}
+
+fn capitalize_first(word: &str) -> String {
+    let mut chars = word.chars();
+    match chars.next() {
+        Some(first) => first.to_uppercase().chain(chars).collect(),
+        None => String::new(),
+    }
+}
+
+#[test]
+fn keeps_title_case() {
+    check_plural(BASIC_TESTS, capitalize_first);
+    check_singular(BASIC_TESTS, capitalize_first);
+}
+
+#[test]
+fn keeps_capitals_inside_words() {
+    let tests = [
+        ("SuperMan", 2, "SuperMen"),
+        ("SuperMen", 1, "SuperMan"),
+        ("PacMan", 2, "PacMen"),
+        ("camelMatrix", 2, "camelMatrices"),
+        ("myIndex", 2, "myIndices"),
+        ("mySheep", 2, "mySheep"),
+        ("myBus", 1, "myBus"),
+        ("the Man", 2, "the Men"),
+        ("the People", 1, "the Person"),
+        ("iOS", 2, "iOS"),
+        ("MacOS", 2, "MacOS"),
+        ("fooURL", 2, "fooURLs"),
+        ("myPERSON", 1, "myPERSON"),
+        ("myPERSON", 2, "myPEOPLE"),
+        ("myPEOPLE", 2, "myPEOPLE"),
+        ("SuperMAN", 2, "SuperMEN"),
+        ("myABACUS", 2, "myABACUSES"),
+        ("the Lives", 1, "the Life"),
+    ];
+    for (word, count, expected) in tests {
+        assert_eq!(
+            pluralize(word, count, false),
+            expected,
+            "{word:?} with count {count}"
+        );
+    }
+}
+
+#[test]
+fn irregular_words_are_matched_case_insensitively() {
+    assert_eq!(pluralize("I", 2, false), "WE");
+    assert_eq!(pluralize("i", 2, false), "we");
+    assert_eq!(pluralize("We", 1, false), "I");
+    assert_eq!(pluralize("WE", 1, false), "I");
+    assert_eq!(pluralize("Foot", 1, false), "Foot");
+    assert_eq!(pluralize("Foot", 2, false), "Feet");
+    assert_eq!(pluralize("Feet", 2, false), "Feet");
+    assert_eq!(pluralize("Goose", 2, false), "Geese");
+    assert_eq!(pluralize("He", 2, false), "They");
+    assert_eq!(pluralize("fEET", 2, false), "fEET");
+    assert_eq!(pluralize("fOOT", 2, false), "feet");
+}
+
+#[test]
+fn title_case_words_with_multibyte_captures_do_not_panic() {
+    let tests = [
+        ("Café", 2, "Café"),
+        ("Résumé", 2, "Résumé"),
+        ("Fiancé", 2, "Fiancé"),
+        ("Cafe\u{301}", 2, "Cafe\u{301}"),
+        ("Hello 世界", 2, "Hello 世界"),
+        ("Hañese", 1, "Hañese"),
+        ("Hañese", 2, "Hañese"),
+        ("Séus", 1, "Séus"),
+        ("Nine—lives", 1, "Nine—life"),
+        ("Españy", 2, "Españies"),
+    ];
+    for (word, count, expected) in tests {
+        assert_eq!(
+            pluralize(word, count, false),
+            expected,
+            "{word:?} with count {count}"
+        );
+    }
+}
+
+#[test]
+fn keeps_dollar_signs_in_the_word() {
+    assert_eq!(pluralize("cost$", 2, false), "cost$s");
+    assert_eq!(pluralize("US$", 2, false), "US$S");
+    assert_eq!(pluralize("a$b", 2, false), "a$bs");
+    assert_eq!(pluralize("$1", 2, false), "$1s");
+    assert_eq!(pluralize("$wolf", 2, false), "$wolves");
+    assert_eq!(pluralize("$wolves", 1, false), "$wolf");
+}
+
+// `BuiltinRules::find` must pick the same rule as trying every rule from the last one.
+fn check_rule_selection(builtin: &BuiltinRules, words: &[String]) {
+    for word in words {
+        let expected = builtin
+            .rules
+            .iter()
+            .rev()
+            .find(|rule| rule.rule.is_match(word));
+        let found = builtin.find(word);
+        assert!(
+            match (expected, found) {
+                (Some(expected), Some(found)) => std::ptr::eq(expected, found),
+                (None, None) => true,
+                _ => false,
+            },
+            "different rule selected for {word:?}"
+        );
+    }
+}
+
+#[test]
+fn builtin_rule_selection_matches_linear_scan() {
+    let mut words: Vec<String> = BASIC_TESTS
+        .iter()
+        .chain(PLURAL_TESTS)
+        .chain(SINGULAR_TESTS)
+        .flat_map(|pair| pair.iter())
+        .chain(&[
+            "mouse",
+            "titmouse",
+            "lice",
+            "Élives",
+            "émouse",
+            "日mouse",
+            "smilies",
+            "monies",
+            "Café",
+            "Hañese",
+            "Nine—lives",
+            "",
+            " ",
+            "$",
+            "s",
+            "ſ",
+            "\u{212A}",
+        ])
+        .flat_map(|word| [word.to_string(), word.to_uppercase()])
+        .collect();
+    // Long words skip the `RegexSet`
+    words.push(format!("{}house", "a".repeat(200)));
+    words.push(format!("{}mice", "é".repeat(100)));
+
+    check_rule_selection(&BUILTIN_PLURAL_RULES, &words);
+    check_rule_selection(&BUILTIN_SINGULAR_RULES, &words);
+}
+
+#[test]
+fn only_unicode_boundary_rules_are_matched_individually() {
+    for builtin in [&*BUILTIN_PLURAL_RULES, &*BUILTIN_SINGULAR_RULES] {
+        for (i, rule) in builtin.rules.iter().enumerate() {
+            let has_boundary = rule.rule.as_str().contains(r"\b");
+            assert_eq!(builtin.boundary_rules.contains(&i), has_boundary);
+            assert_eq!(builtin.set_rules.contains(&i), !has_boundary);
         }
     }
 }
