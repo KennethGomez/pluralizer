@@ -63,6 +63,8 @@ Outputs not listed below are unchanged.
 
 - `UncountableRule` implements `Debug` and `Clone`.
 - The minimum supported Rust version is declared as 1.65, which `regex` already required.
+- The dependencies require `regex` 1.13.1 and `once_cell` 1.21.4, their latest releases, which
+  still support Rust 1.65. The benchmarks use `criterion` 0.8.
 - The license metadata uses the SPDX expression `MIT OR Apache-2.0`.
 - The documentation examples assert their results. The docs now describe rule precedence, how
   counts are handled, and where results differ from the NPM package.
